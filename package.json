@@ -1,0 +1,13 @@
+{
+  "name": "mind-helper-counselor",
+  "version": "1.0.0",
+  "description": "초등학교 6학년을 위한 AI 마음 건강 도우미",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {}
+}

@@ -28,7 +28,7 @@ const SYSTEM_PROMPT = `
 - 자해나 자살 생각을 이야기하면 현재 안전을 직접 확인하고, 즉시 믿을 수 있는 어른에게 알리고 119나 1388 등에 도움을 요청하도록 안내해.
 `;
 
-// Helper: Response sender supporting both Vercel and raw Node http
+// Helper: Response sender supporting both Vercel (@vercel/node) and raw Node http
 function sendJson(res, statusCode, data) {
   if (typeof res.status === 'function' && typeof res.json === 'function') {
     return res.status(statusCode).json(data);
@@ -37,7 +37,7 @@ function sendJson(res, statusCode, data) {
   res.end(JSON.stringify(data));
 }
 
-// 1. OpenAI GPT API Call
+// 1. OpenAI GPT API Call (with 9s safety timeout)
 async function callOpenAIAPI(apiKey, message, history) {
   return new Promise((resolve, reject) => {
     const messages = [
@@ -90,13 +90,18 @@ async function callOpenAIAPI(apiKey, message, history) {
       });
     });
 
+    // Timeout safety for Vercel
+    req.setTimeout(8500, () => {
+      req.destroy(new Error('OpenAI API 응답 대기 시간 초과'));
+    });
+
     req.on('error', reject);
     req.write(payload);
     req.end();
   });
 }
 
-// 2. Google Gemini API Call
+// 2. Google Gemini API Call (with 9s safety timeout)
 async function callGeminiAPI(apiKey, message, history) {
   return new Promise((resolve, reject) => {
     const contents = [];
@@ -153,6 +158,10 @@ async function callGeminiAPI(apiKey, message, history) {
       });
     });
 
+    req.setTimeout(8500, () => {
+      req.destroy(new Error('Gemini API 응답 대기 시간 초과'));
+    });
+
     req.on('error', reject);
     req.write(payload);
     req.end();
@@ -161,7 +170,7 @@ async function callGeminiAPI(apiKey, message, history) {
 
 // 3. Rule-based Fallback Conversational Engine
 function generateLocalResponse(message, history) {
-  const text = message.trim();
+  const text = (message || '').trim();
 
   // 1. Extreme danger signals
   if (/죽고\s*싶|사라지고\s*싶|자해|자살|끝내고\s*싶|살기\s*싫|다치게/.test(text)) {
@@ -265,6 +274,7 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
+  // Handle OPTIONS preflight
   if (req.method === 'OPTIONS') {
     if (typeof res.status === 'function') {
       return res.status(200).end();
@@ -274,32 +284,40 @@ module.exports = async function handler(req, res) {
     return;
   }
 
+  // Health check for GET
+  if (req.method === 'GET') {
+    return sendJson(res, 200, {
+      status: 'ok',
+      service: 'AI 마음 건강 도우미 API',
+      message: '정상 작동 중입니다.'
+    });
+  }
+
   if (req.method !== 'POST') {
     return sendJson(res, 405, { error: 'Method Not Allowed' });
   }
 
   try {
-    // Parse request body if not already parsed
+    // Parse request body reliably without hanging
     let data = req.body;
-    if (!data) {
+    if (!data && !req.readableEnded) {
       data = await new Promise((resolve) => {
         let raw = '';
+        const timer = setTimeout(() => resolve({}), 2000);
         req.on('data', chunk => raw += chunk);
         req.on('end', () => {
-          try {
-            resolve(JSON.parse(raw));
-          } catch (e) {
-            resolve({});
-          }
+          clearTimeout(timer);
+          try { resolve(JSON.parse(raw)); } catch(e) { resolve({}); }
+        });
+        req.on('error', () => {
+          clearTimeout(timer);
+          resolve({});
         });
       });
     } else if (typeof data === 'string') {
-      try {
-        data = JSON.parse(data);
-      } catch (e) {
-        data = {};
-      }
+      try { data = JSON.parse(data); } catch(e) { data = {}; }
     }
+    data = data || {};
 
     const userMsg = data.message || '';
     const history = data.history || [];
@@ -342,7 +360,7 @@ module.exports = async function handler(req, res) {
     return sendJson(res, 200, { reply, engine });
   } catch (err) {
     console.error('API 핸들러 에러:', err);
-    return sendJson(res, 500, { error: '서버 내부 오류가 발생했습니다.' });
+    return sendJson(res, 500, { error: '서버 내부 처리 중 오류가 발생했습니다.' });
   }
 };
 

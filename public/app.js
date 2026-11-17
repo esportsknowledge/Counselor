@@ -86,12 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!response.ok) {
-        let errMsg = `서버 오류 (${response.status})`;
+        let errText = `상태 코드 ${response.status}`;
         try {
-          const errData = await response.json();
-          if (errData && errData.error) errMsg = errData.error;
+          const errJson = await response.json();
+          if (errJson && errJson.error) errText = errJson.error;
         } catch (_) {}
-        throw new Error(errMsg);
+        throw new Error(errText);
       }
 
       const data = await response.json();
@@ -104,8 +104,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render AI Message
       appendMessage('ai', reply);
     } catch (err) {
-      console.error('Chat error:', err);
-      appendMessage('ai', '어라, 서버 연결에 잠깐 문제가 생긴 것 같아. 잠시 후에 다시 이야기해 줄래?');
+      console.error('Chat error details:', err);
+      const reason = err && err.message ? ` (${err.message})` : '';
+      appendMessage('ai', `어라, 서버 연결에 문제가 생겼어.${reason} 브라우저를 새로고침(Ctrl+F5)하거나 잠시 후 다시 시도해 줄래?`);
     } finally {
       typingIndicator.style.display = 'none';
       chatMessages.scrollTop = chatMessages.scrollHeight;
