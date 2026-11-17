@@ -92,22 +92,22 @@
     </footer>
   </div>
 
-  <!-- Settings Modal (Optional Gemini API Key) -->
+  <!-- Settings Modal (OpenAI GPT / Gemini API Key) -->
   <div class="modal-overlay" id="settings-modal" style="display: none;">
     <div class="modal-content">
       <div class="modal-header">
-        <h3>⚙️ 설정 (선택 사항)</h3>
+        <h3>⚙️ AI 모델 및 API 설정</h3>
         <button id="close-modal-btn" class="close-btn">&times;</button>
       </div>
       <div class="modal-body">
         <p class="modal-desc">
-          기본적으로 <strong>내장 상담 엔진</strong>이 작동하여 API 키 없이도 프롬프트 지침에 맞춰 안전하고 따뜻하게 답변합니다.
+          서버 환경변수(<code>OPENAI_API_KEY</code>) 또는 <code>.env</code> 파일에 키가 설정되어 있으면 자동으로 적용됩니다.
           <br><br>
-          만약 구글 <strong>Gemini API 키</strong>를 보유하고 계시다면 입력하여 더 풍부한 생성형 AI 답변을 사용할 수도 있습니다.
+          브라우저에서 직접 API 키를 입력하여 테스트할 수도 있습니다.
         </p>
-        <label for="api-key-input">Gemini API Key (선택):</label>
-        <input type="password" id="api-key-input" placeholder="AIzaSy..." />
-        <p class="hint">키는 브라우저 로컬 저장소에만 보관됩니다.</p>
+        <label for="api-key-input">OpenAI (GPT) 또는 Gemini API Key:</label>
+        <input type="password" id="api-key-input" placeholder="sk-..." />
+        <p class="hint">OpenAI(sk-...) 키를 입력하면 최신 GPT 모델이 프롬프트 지침에 맞춰 대화합니다.</p>
       </div>
       <div class="modal-footer">
         <button id="save-settings-btn" class="btn primary-btn">저장하기</button>

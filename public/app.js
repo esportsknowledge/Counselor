@@ -13,7 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const history = [];
 
   // Load saved API key from localStorage if any
-  const savedKey = localStorage.getItem('gemini_api_key');
+  const savedKey = localStorage.getItem('ai_api_key') || localStorage.getItem('gemini_api_key') || '';
   if (savedKey) {
     apiKeyInput.value = savedKey;
   }
@@ -36,11 +36,13 @@ document.addEventListener('DOMContentLoaded', () => {
   saveSettingsBtn.addEventListener('click', () => {
     const key = apiKeyInput.value.trim();
     if (key) {
-      localStorage.setItem('gemini_api_key', key);
-      alert('Gemini API 키가 저장되었습니다.');
+      localStorage.setItem('ai_api_key', key);
+      const isGpt = key.startsWith('sk-');
+      alert(isGpt ? 'OpenAI GPT API 키가 저장되었습니다.' : 'API 키가 저장되었습니다.');
     } else {
+      localStorage.removeItem('ai_api_key');
       localStorage.removeItem('gemini_api_key');
-      alert('API 키가 초기화되었습니다. 기본 내장 상담 엔진을 사용합니다.');
+      alert('저장된 API 키가 초기화되었습니다. (환경변수 또는 기본 내장 엔진 사용)');
     }
     settingsModal.style.display = 'none';
   });
@@ -72,7 +74,7 @@ document.addEventListener('DOMContentLoaded', () => {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
-      const apiKey = localStorage.getItem('gemini_api_key') || '';
+      const apiKey = localStorage.getItem('ai_api_key') || '';
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -119,7 +121,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const bubble = document.createElement('div');
     bubble.className = `message-bubble ${sender === 'user' ? 'user-bubble' : 'ai-bubble'}`;
 
-    // Split text by newlines into paragraphs
     const paragraphs = text.split('\n').filter(p => p.trim() !== '');
     if (paragraphs.length > 0) {
       paragraphs.forEach(p => {
