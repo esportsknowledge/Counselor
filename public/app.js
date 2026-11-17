@@ -86,7 +86,12 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       if (!response.ok) {
-        throw new Error('서버 응답 오류');
+        let errMsg = `서버 오류 (${response.status})`;
+        try {
+          const errData = await response.json();
+          if (errData && errData.error) errMsg = errData.error;
+        } catch (_) {}
+        throw new Error(errMsg);
       }
 
       const data = await response.json();
@@ -99,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
       // Render AI Message
       appendMessage('ai', reply);
     } catch (err) {
-      console.error(err);
-      appendMessage('ai', '어라, 인터넷 연결이나 서버에 잠깐 문제가 생긴 것 같아. 잠시 후에 다시 이야기해 줄래?');
+      console.error('Chat error:', err);
+      appendMessage('ai', '어라, 서버 연결에 잠깐 문제가 생긴 것 같아. 잠시 후에 다시 이야기해 줄래?');
     } finally {
       typingIndicator.style.display = 'none';
       chatMessages.scrollTop = chatMessages.scrollHeight;
